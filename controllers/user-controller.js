@@ -1,63 +1,115 @@
-const { Pizza } = require('../models');
+const { User, Thought } = require('../models');
 
-const pizzaController = {
-  // get all pizzas
-  getAllPizza(req, res) {
-    Pizza.find({})
-      .populate({
-        path: 'comments',
-        select: '-__v'
-      })
+const userController = {
+  // get all users
+  getAllUser(req, res) {
+    User.find()
       .select('-__v')
-      .sort({ _id: -1 })
-      .then(dbPizzaData => res.json(dbPizzaData))
-      .catch(err => {
+      .then((dbUserData) => {
+        res.json(dbUserData);
+      })
+      .catch((err) => {
         console.log(err);
-        res.sendStatus(400);
+        res.status(500).json(err);
       });
   },
-
-  // get one pizza by id
-  getPizzaById({ params }, res) {
-    Pizza.findOne({ _id: params.id })
-      .populate({
-        path: 'comments',
-        select: '-__v'
-      })
+  // get single user by id
+  getUserById(req, res) {
+    User.findOne({ _id: req.params.userId })
       .select('-__v')
-      .then(dbPizzaData => res.json(dbPizzaData))
-      .catch(err => {
-        console.log(err);
-        res.sendStatus(400);
-      });
-  },
-
-  // createPizza
-  createPizza({ body }, res) {
-    Pizza.create(body)
-      .then(dbPizzaData => res.json(dbPizzaData))
-      .catch(err => res.json(err));
-  },
-
-  // update pizza by id
-  updatePizza({ params, body }, res) {
-    Pizza.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true })
-      .then(dbPizzaData => {
-        if (!dbPizzaData) {
-          res.status(404).json({ message: 'No pizza found with this id!' });
-          return;
+      .populate('friends')
+      .populate('thoughts')
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: 'No user with this id!' });
         }
-        res.json(dbPizzaData);
+        res.json(dbUserData);
       })
-      .catch(err => res.json(err));
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
   },
-
-  // delete pizza
-  deletePizza({ params }, res) {
-    Pizza.findOneAndDelete({ _id: params.id })
-      .then(dbPizzaData => res.json(dbPizzaData))
-      .catch(err => res.json(err));
-  }
+  // create a new user
+  createUser(req, res) {
+    User.create(req.body)
+      .then((dbUserData) => {
+        res.json(dbUserData);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  },
+  // update a user
+  updateUser(req, res) {
+    User.findOneAndUpdate(
+      { _id: req.params.userId },
+      {
+        $set: req.body,
+      },
+      {
+        runValidators: true,
+        new: true,
+      }
+    )
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: 'No user with this id!' });
+        }
+        res.json(dbUserData);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  },
+  // delete user (BONUS: and delete associated thoughts)
+  deleteUser(req, res) {
+    User.findOneAndDelete({ _id: req.params.userId })
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: 'No user with this id!' });
+        }
+        // BONUS: get ids of user's `thoughts` and delete them all
+        return Thought.deleteMany({ _id: { $in: dbUserData.thoughts } });
+      })
+      .then(() => {
+        res.json({ message: 'User and associated thoughts deleted!' });
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  },
+  // add friend to friend list
+  addFriend(req, res) {
+    User.findOneAndUpdate({ _id: req.params.userId }, { $addToSet: { friends: req.params.friendId } }, { new: true })
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: 'No user with this id!' });
+        }
+        res.json(dbUserData);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  },
+  // remove friend from friend list
+  deleteFriend(req, res) {
+    User.findOneAndUpdate({ _id: req.params.userId }, { $pull: { friends: req.params.friendId } }, { new: true })
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: 'No user with this id!' });
+        }
+        res.json(dbUserData);
+      })
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  },
 };
 
-module.exports = pizzaController;
+module.exports = userController;
