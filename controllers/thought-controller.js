@@ -1,6 +1,6 @@
 const { Thought, User } = require('../models');
 
-const thougtController = {
+const thoughtController = {
   getThoughts(req, res) {
     Thought.find()
       .sort({ createdAt: -1 })
@@ -59,7 +59,7 @@ const thougtController = {
       });
   },
   // delete thought
-  deleteThought(req, res) {
+  removeThought(req, res) {
     Thought.findOneAndRemove({ _id: req.params.thoughtId })
       .then((dbThoughtData) => {
         if (!dbThoughtData) {

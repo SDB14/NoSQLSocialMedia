@@ -24,7 +24,7 @@ const thoughtSchema = new Schema(
 
 
     // use ReplySchema to validate data for a reply
-    reactions: [ReactionsSchema]
+    reactions: [ReactionSchema]
   },
   {
     toJSON: {
